@@ -30,24 +30,37 @@ try:
   if not fruit_choice:
     streamlit.error("Please input a fruit to get information")
   else:
-    fruityvice_response = requests.get("https://fruityvice.com/api/fruit/"+fruit_choice)
-    #streamlit.text(fruityvice_response.json())
-    #normalize the json response
-    fruityvice_normalized = pandas.json_normalize(fruityvice_response.json())
-    #print the normalized response in table
-    streamlit.dataframe(fruityvice_normalized)
+    streamlit.dataframe(def_get_fruityvice_data(fruit_choice)))
 
 except URLError as e:
   streamlit.error()
   
-#connection to snowflake
-my_cnx = snowflake.connector.connect(**streamlit.secrets["snowflake"])
-my_cur = my_cnx.cursor()
-#query table
-my_cur.execute("SELECT * FROM FRUIT_LOAD_LIST")
-my_data_rows = my_cur.fetchall()
-streamlit.header("The fruit load list contains:")
-streamlit.dataframe(my_data_rows)
+if streamlit.button('Get Fruit Load List'):
+  #connection to snowflake
+  my_cnx = snowflake.connector.connect(**streamlit.secrets["snowflake"])
+  my_data_rows = get_fruit_load_list()
+  my_cnx.close()
+  streamlit.dataframe(my_data_rows)
 
 add_my_fruit = streamlit.text_input('What fruit would you like to add?','Jackfruit')
-streamlit.write('Thanks for adding ', add_my_fruit)
+if streamlit.button('Add fruit to list'):
+  my_cnx = snowflake.connector.connect(**streamlit.secrets["snowflake"])
+  streamlit.text(insert_row_snowflake(add_my_fruit))
+  my_cnx.close()
+
+def get_fruityvice_data(this_fruit_choice):
+  fruityvice_response = requests.get("https://fruityvice.com/api/fruit/"+this_fruit_choice)
+  fruityvice_normalized = pandas.json_normalize(fruityvice_response.json())
+  return fruityvice_normalized
+
+def get_fruit_load_list():
+  with my_cnx.cursor as my_cur:
+    my_cur.execute("SELECT * FROM FRUIT_LOAD_LIST")
+    return my_cur.fetchall()
+
+def insert_row_snowflake(new_fruit):
+  with my_cnx.cursor() as my_cur:
+    my_cur.execute("INSERT INTO FRUIT_LOAD_LIST VALUES('"+ new_fruit +"')")
+    return "Thanks for adding " + new_fruit
+
+
