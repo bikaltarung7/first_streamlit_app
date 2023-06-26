@@ -4,6 +4,21 @@ import requests
 import snowflake.connector
 from urllib.error import URLError
 
+def get_fruityvice_data(this_fruit_choice):
+  fruityvice_response = requests.get("https://fruityvice.com/api/fruit/"+this_fruit_choice)
+  fruityvice_normalized = pandas.json_normalize(fruityvice_response.json())
+  return fruityvice_normalized
+
+def get_fruit_load_list():
+  with my_cnx.cursor as my_cur:
+    my_cur.execute("SELECT * FROM FRUIT_LOAD_LIST")
+    return my_cur.fetchall()
+
+def insert_row_snowflake(new_fruit):
+  with my_cnx.cursor() as my_cur:
+    my_cur.execute("INSERT INTO FRUIT_LOAD_LIST VALUES('"+ new_fruit +"')")
+    return "Thanks for adding " + new_fruit
+
 streamlit.title("My Mom's New Healthy Diner")
 
 streamlit.header('Breakfast Menu')
@@ -47,20 +62,5 @@ if streamlit.button('Add fruit to list'):
   my_cnx = snowflake.connector.connect(**streamlit.secrets["snowflake"])
   streamlit.text(insert_row_snowflake(add_my_fruit))
   my_cnx.close()
-
-def get_fruityvice_data(this_fruit_choice):
-  fruityvice_response = requests.get("https://fruityvice.com/api/fruit/"+this_fruit_choice)
-  fruityvice_normalized = pandas.json_normalize(fruityvice_response.json())
-  return fruityvice_normalized
-
-def get_fruit_load_list():
-  with my_cnx.cursor as my_cur:
-    my_cur.execute("SELECT * FROM FRUIT_LOAD_LIST")
-    return my_cur.fetchall()
-
-def insert_row_snowflake(new_fruit):
-  with my_cnx.cursor() as my_cur:
-    my_cur.execute("INSERT INTO FRUIT_LOAD_LIST VALUES('"+ new_fruit +"')")
-    return "Thanks for adding " + new_fruit
 
 
